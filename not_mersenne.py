@@ -9,13 +9,15 @@ def not_mersenne(base) -> int:
     Return a where am is the class of values of n being ruled out.
     """
 
-    seen = set()
-    digit = 1
-    while digit not in seen:
-        seen.add(digit)
+    assert base % 2, "A multiple of two causes an infinite loop."
+    assert 1 << base.bit_length() != base, "A power of two causes no solution."
+
+    digit = 2
+    n = 1
+    while digit != 1:
         digit = (digit * 2) % base
-    if digit == 1:
-        return len(seen)
+        n += 1
+    return n
 
 def primes(known=[2,3,5,7,11]):
     yield from known
@@ -30,6 +32,8 @@ def primes(known=[2,3,5,7,11]):
             known.append(i)
 
 if __name__ == "__main__":
-    for base in primes():
+    p = primes()
+    next(p)  # skip 2
+    for base in p:
         a = not_mersenne(base)
         print(a, end="n\n")
