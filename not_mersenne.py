@@ -19,15 +19,29 @@ def not_mersenne(base) -> int:
         n += 1
     return n
 
+def isqrt(n):
+    # Newton's method.
+    x = n // 2
+    y = 0
+    while abs(x - y) > 1:
+        y = x - (x*x - n)//(2*x)
+        x = y - (y*y - n)//(2*y)
+    return max(x, y)
+
 def primes(known=[2,3,5,7,11]):
     yield from known
     i = known[-1]
     while True:
-        i += 1
+        i += 2
+        j = isqrt(i)
+        is_prime = True
         for prime in known:
             if i % prime == 0:
+                is_prime = False
                 break
-        else:
+            if prime > j:
+                break
+        if is_prime:
             yield i
             known.append(i)
 
