@@ -45,9 +45,53 @@ def primes(known=[2,3,5,7,11]):
             yield i
             known.append(i)
 
+def factorise(n):
+    for p in primes.__defaults__[0]:
+        if n == 1:
+            return
+        if n%p == 0:
+            yield p
+            c = p
+            while n%p == 0:
+                n //= p
+                c *= p
+                yield c
+
+def certain(p):
+    # Flawed somewhat, but it's a decent attempt.
+    # Outputs unnecessary prime powers sometimes, but what can you do?
+    certain = set()
+    uncertain = {}
+    last_power_of_two = 2
+    last_exponent = 1
+    for base in p:
+        n = not_mersenne(base)
+        factors = frozenset(f for f in factorise(n) if f not in certain)
+        if n in factors:
+            certain.add(n)
+            yield n
+        elif factors:
+            uncertain[n] =  factors
+
+        if base > last_power_of_two:
+            last_exponent += 1
+            last_power_of_two += 2
+            if last_exponent in uncertain:
+                for n in tuple(uncertain.keys()):
+                    factors = frozenset(f for f in uncertain[n]
+                                        if f not in certain)
+                    if factors:
+                        uncertain[n] = factors
+                    else:
+                        del uncertain[n]
+
 if __name__ == "__main__":
     p = primes()
     next(p)  # skip 2
-    for base in p:
-        a = not_mersenne(base)
-        print(a, end="n\n")
+    print(end="(2^")
+    try:
+        for a in certain(p):
+            print(a, end="n) - 1\n(2^")
+    except KeyboardInterrupt:
+        print(" …")
+        raise
