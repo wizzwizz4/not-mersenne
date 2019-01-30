@@ -51,39 +51,44 @@ def factorise(n):
             return
         if n%p == 0:
             yield p
-            c = p
             while n%p == 0:
                 n //= p
-                c *= p
-                yield c
 
 def certain(p):
-    # Flawed somewhat, but it's a decent attempt.
-    # Outputs unnecessary prime powers sometimes, but what can you do?
     certain = set()
     uncertain = {}
+    isqrts = {}
     last_power_of_two = 2
     last_exponent = 1
     for base in p:
         n = not_mersenne(base)
-        factors = frozenset(f for f in factorise(n) if f not in certain)
-        if n in factors:
+        try:
+            factors = frozenset(f for f in factorise(n)
+                                if 1/(f not in certain))
+        except ZeroDivisionError:
+            continue
+        if n in factors:  # n is prime
             certain.add(n)
             yield n
         elif factors:
-            uncertain[n] =  factors
+            uncertain[n] = factors
+            isqrts[n] = isqrt(n)
 
         if base > last_power_of_two:
             last_exponent += 1
             last_power_of_two += 2
-            if last_exponent in uncertain:
-                for n in tuple(uncertain.keys()):
+            for n in tuple(uncertain.keys()):
+                try:
                     factors = frozenset(f for f in uncertain[n]
-                                        if f not in certain)
-                    if factors:
-                        uncertain[n] = factors
-                    else:
-                        del uncertain[n]
+                                        if 1/(f not in certain))
+                except ZeroDivisionError:
+                    del uncertain[n]
+                    del isqrts[n]
+                if isqrts[n] < last_exponent:
+                    del uncertain[n]
+                    del isqrts[n]
+                    certain.add(n)
+                    yield n
 
 if __name__ == "__main__":
     p = primes()
