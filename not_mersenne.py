@@ -12,11 +12,16 @@ def not_mersenne(base) -> int:
     assert base % 2, "A multiple of two causes an infinite loop."
     assert 1 << base.bit_length() != base, "A power of two causes no solution."
 
-    digit = 2
-    n = 1
+    y = n = base.bit_length()
+    digit = (1 << n) % base
     while digit != 1:
-        digit = (digit * 2) % base
-        n += 1
+        d = y - digit.bit_length()
+        digit <<= d
+        n += d
+        if digit < base:
+            digit *= 2
+            n += 1
+        digit -= base
     return n
 
 def isqrt(n):
