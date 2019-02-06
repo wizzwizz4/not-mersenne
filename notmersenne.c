@@ -53,10 +53,10 @@ speedint primes() {
     if (no_known >= allocated) {
         if (known) {
             allocated <<= 1;
-            known = realloc(known, allocated);
+            known = realloc(known, allocated * sizeof(speedint));
         } else {
             allocated = 1024;
-            known = malloc(allocated);
+            known = malloc(allocated * sizeof(speedint));
             return 2;
         }
         // Don't bother with NULL handling right now; we've got no recourse
