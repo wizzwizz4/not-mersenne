@@ -13,7 +13,7 @@ def not_mersenne(base) -> int:
     assert 1 << base.bit_length() != base, "A power of two causes no solution."
 
     y = n = base.bit_length()
-    digit = (1 << n) % base
+    digit = (1 << n) - base
     while digit != 1:
         d = y - digit.bit_length()
         digit <<= d
