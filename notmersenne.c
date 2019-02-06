@@ -57,6 +57,7 @@ speedint primes() {
         } else {
             allocated = 1024;
             known = malloc(allocated * sizeof(speedint));
+            known[0] = 2;
             return 2;
         }
         // Don't bother with NULL handling right now; we've got no recourse
@@ -66,8 +67,8 @@ speedint primes() {
     _primes_loop_start:
     i += 2;  // only try even numbers
     speedint j = isqrt(i);
-    speedint prime;
-    for (size_t k = 0; (prime = known[k]) < j && k < no_known; k += 1) {
+    register speedint prime;
+    for (speedint *k = known; (prime = *k) < j; k += 1) {
         if (i % prime == 0) {
             goto _primes_loop_start;
         }
