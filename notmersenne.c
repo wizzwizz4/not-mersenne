@@ -48,38 +48,58 @@ speedint isqrt(speedint n) {
 speedint *known_primes = NULL;
 
 speedint primes() {
-    static size_t allocated = 0;
-    static size_t no_known = 1;
-    static size_t i = 1;
+    static size_t calculated = 2;
+    static size_t output_index = -2;
 
-    if (no_known >= allocated) {
-        if (known_primes) {
-            allocated <<= 1;
-            known_primes = realloc(known_primes,
-                                   allocated * sizeof(speedint));
-        } else {
-            allocated = 1024;
-            known_primes = malloc(allocated * sizeof(speedint));
-            known_primes[0] = 2;
-            known_primes[1] = 3;
-            return 2;
-        }
-        // Don't bother with NULL handling right now; we've got no recourse
-        // but crashing anyway, so it'll just slow us down.
+    if (++output_index < calculated) {
+        return known_primes[output_index];
+    }
+    output_index -= 1;
+
+    if (!known_primes) {
+        known_primes = malloc(sizeof(speedint));
+        output_index = 0;
+        known_primes[1] = 3;
+        return (known_primes[0] = 2);
     }
 
-    _primes_loop_start:
-    i += 2;  // only try even numbers
-    speedint j = isqrt(i);
-    register speedint prime;
-    for (speedint *k = known_primes; (prime = *k) < j; k += 1) {
-        if (i % prime == 0) {
-            goto _primes_loop_start;
+    // todo: optimise to not bother with 2 – is that possible?
+
+    register speedint lower = known_primes[output_index];
+    register speedint upper = lower * lower;
+    lower += 2;
+    bool sieve_arr[upper - lower];
+    bool *sieve = sieve_arr - lower;
+    // zero
+    for (size_t i = lower; i < upper; i += 2) {
+        sieve[i] = true;
+    }
+    // sieve
+    for (size_t prime_i = 1; prime_i <= output_index; prime_i += 1) {
+        speedint prime = known_primes[prime_i];
+        for (speedint i = lower + ((lower % prime) ? prime - (lower % prime)
+                                                   : 0);
+             i < upper;
+             i += prime) {
+           sieve[i] = false;
         }
     }
-    known_primes[no_known] = i;
-    no_known += 1;
-    return i;
+    // allocate
+    for (size_t i = lower; i < upper; i += 2) {
+        if (sieve[i]) {
+            calculated += 1;
+        }
+    }
+    known_primes = realloc(known_primes,
+                           calculated * sizeof(speedint));
+    // save
+    speedint *destination = &known_primes[output_index];
+    for (size_t i = lower; i < upper; i += 2) {
+        if (sieve[i]) {
+            *(++destination) = i;
+        }
+    }
+    return known_primes[++output_index];
 }
 
 typedef struct {
