@@ -8,6 +8,7 @@
 
 typedef uint_fast64_t speedint;
 #define PRIspeedint PRIuFAST64
+#define SCNspeedint SCNuFAST64
 
 speedint const high_bit = (sizeof(speedint) * CHAR_BIT) - 1;
 
@@ -44,20 +45,23 @@ speedint isqrt(speedint n) {
     return (x > y) ? x : y;
 }
 
+speedint *known_primes = NULL;
+
 speedint primes() {
     static size_t allocated = 0;
-    static speedint *known = NULL;
-    static size_t no_known = 0;
+    static size_t no_known = 1;
     static size_t i = 1;
 
     if (no_known >= allocated) {
-        if (known) {
+        if (known_primes) {
             allocated <<= 1;
-            known = realloc(known, allocated * sizeof(speedint));
+            known_primes = realloc(known_primes,
+                                   allocated * sizeof(speedint));
         } else {
             allocated = 1024;
-            known = malloc(allocated * sizeof(speedint));
-            known[0] = 2;
+            known_primes = malloc(allocated * sizeof(speedint));
+            known_primes[0] = 2;
+            known_primes[1] = 3;
             return 2;
         }
         // Don't bother with NULL handling right now; we've got no recourse
@@ -68,17 +72,68 @@ speedint primes() {
     i += 2;  // only try even numbers
     speedint j = isqrt(i);
     register speedint prime;
-    for (speedint *k = known; (prime = *k) < j; k += 1) {
+    for (speedint *k = known_primes; (prime = *k) < j; k += 1) {
         if (i % prime == 0) {
             goto _primes_loop_start;
         }
     }
-    known[no_known] = i;
+    known_primes[no_known] = i;
     no_known += 1;
     return i;
 }
 
+typedef struct {
+    speedint prime;
+    speedint exponent;
+} factor;
+
+factor *factorise(speedint n, size_t *length_out) {
+    assert(n > 1);
+    size_t length = 0;
+    size_t allocated = 32;
+    speedint *primes = known_primes;
+    factor *factors;
+    factors = NULL;
+    while (1) {
+        allocated <<= 1;
+        factors = realloc(factors, allocated * sizeof(factor));
+        while (length < allocated) {
+            register speedint prime = *primes;
+            if (n % prime == 0) {
+                register speedint exponent = 0;
+                do {
+                    n /= prime;
+                    exponent += 1;
+                } while (n % prime == 0);
+                factors[length].prime = prime,
+                factors[length].exponent = exponent;
+                length += 1;
+            }
+            primes += 1;
+            if (n == 1) {
+                factors = realloc(factors, length * sizeof(factor));
+                *length_out = length;
+                return factors;
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
+    if (argc > 1) {
+        speedint a;
+        sscanf(argv[1], "%" SCNspeedint, &a);
+        { speedint b = a; while (--b) primes(); }
+        size_t factorc;
+        factor *factorv = factorise(a, &factorc);
+        printf("Factors of %" PRIspeedint "\n", a);
+        for (size_t i = 0; i < factorc; i += 1) {
+            printf("  * %" PRIspeedint " ^ %" PRIspeedint "\n",
+                   factorv[i].prime, factorv[i].exponent);
+        }
+        exit(0);
+    }
+
     primes();  // initialise, ignore 2
     while (1) {
         printf("%" PRIspeedint "\n", not_mersenne(primes()));
