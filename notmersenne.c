@@ -63,29 +63,34 @@ speedint primes() {
         return (known_primes[0] = 2);
     }
 
-    // todo: optimise to not bother with 2 – is that possible?
-
     register speedint lower = known_primes[output_index];
-    register speedint upper = lower * lower;
+    register speedint delta = lower * (lower - 1) - 2;
+    register speedint sieve_size = delta / 2;
     lower += 2;
-    bool sieve_arr[upper - lower];
-    bool *sieve = sieve_arr - lower;
+    bool sieve[sieve_size];
+
     // zero
-    for (size_t i = lower; i < upper; i += 2) {
+    for (size_t i = 0; i < sieve_size; i += 1) {
         sieve[i] = true;
     }
+
     // sieve
     for (size_t prime_i = 1; prime_i <= output_index; prime_i += 1) {
         speedint prime = known_primes[prime_i];
-        for (speedint i = lower + ((lower % prime) ? prime - (lower % prime)
-                                                   : 0);
-             i < upper;
-             i += prime) {
+        if (lower % prime == 0) {
+            sieve[0] = false;
+        }
+        speedint i = (prime - (lower % prime));
+        if (i % 2 == 1) {
+            i += prime;
+        }
+        i /= 2;
+        for (; i < sieve_size; i += prime) {
            sieve[i] = false;
         }
     }
     // allocate
-    for (size_t i = lower; i < upper; i += 2) {
+    for (size_t i = 0; i < sieve_size; i += 1) {
         if (sieve[i]) {
             calculated += 1;
         }
@@ -94,9 +99,9 @@ speedint primes() {
                            calculated * sizeof(speedint));
     // save
     speedint *destination = &known_primes[output_index];
-    for (size_t i = lower; i < upper; i += 2) {
+    for (size_t i = 0; i < sieve_size; i += 1) {
         if (sieve[i]) {
-            *(++destination) = i;
+            *(++destination) = lower + i * 2;
         }
     }
     return known_primes[++output_index];
@@ -141,7 +146,12 @@ factor *factorise(speedint n, size_t *length_out) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1) {
-        speedint a;
+        speedint a = 0;
+        if (!a) {
+            while (1) {
+                printf("%" PRIspeedint "\n", primes());
+            }
+        }
         sscanf(argv[1], "%" SCNspeedint, &a);
         { speedint b = a; while (--b) primes(); }
         size_t factorc;
@@ -151,7 +161,7 @@ int main(int argc, char *argv[]) {
             printf("  * %" PRIspeedint " ^ %" PRIspeedint "\n",
                    factorv[i].prime, factorv[i].exponent);
         }
-        exit(0);
+        return 0;
     }
 
     primes();  // initialise, ignore 2
