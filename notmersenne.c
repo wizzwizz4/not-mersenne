@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <getopt.h>
 
 typedef uint_fast64_t speedint;
 #define PRIspeedint PRIuFAST64
@@ -16,8 +17,7 @@ speedint not_mersenne(speedint base) {
     assert(base & 1);  // A multiple of two causes an infinite loop.
 
     speedint y = __builtin_clzll(base);
-    // ( same as high_bit - y because (1<<n)-1 ) + 1
-    speedint n = (high_bit ^ y) + 1;
+    speedint n = high_bit + 1 - y;
     speedint digit = (1 << n) - base;
     while (digit != 1) {
         // // (63 - y) - x == 63 - (y + x) = 63 ^ (y + x)
@@ -36,6 +36,7 @@ speedint not_mersenne(speedint base) {
 
 speedint isqrt(speedint n) {
     // optimise me for I am slow
+    // not that that matters; you are unused
     speedint x = n;
     speedint y = 0;
     while ((x & -2) != (y & -2)) {
@@ -64,8 +65,7 @@ speedint primes() {
     }
 
     register speedint lower = known_primes[output_index];
-    register speedint delta = lower * (lower - 1) - 2;
-    register speedint sieve_size = delta / 2;
+    register speedint sieve_size = (lower * (lower - 1)) / 2 - 1;
     lower += 2;
     bool sieve[sieve_size];
 
@@ -145,27 +145,39 @@ factor *factorise(speedint n, size_t *length_out) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc > 1) {
-        speedint a = 0;
-        if (!a) {
-            while (1) {
-                printf("%" PRIspeedint "\n", primes());
+    const struct option longopts[] = {
+        {"factorise",    required_argument, NULL, 0},
+        {"primes",       no_argument,       NULL, 0},
+        {"not_mersenne", no_argument,       NULL, 0},
+        {NULL, 0, NULL, 0}
+    };
+    int longindex;
+    while (getopt_long(argc, argv, "", longopts, &longindex) != -1) {
+        switch (longindex) {
+            case 0: if (optarg == NULL) break;
+            {
+                speedint a;
+                sscanf(optarg, "%" SCNspeedint, &a);
+                while (primes() < a);
+                size_t factorc;
+                factor *factorv = factorise(a, &factorc);
+                printf("Factors of %" PRIspeedint "\n", a);
+                for (size_t i = 0; i < factorc; i += 1) {
+                    printf("  * %" PRIspeedint " ^ %" PRIspeedint "\n",
+                           factorv[i].prime, factorv[i].exponent);
+                }
+                break;
             }
+            case 1:
+                while (1) {
+                    printf("%" PRIspeedint "\n", primes());
+                }
+                break;
+            case 2:
+                primes();  // initialise, ignore 2
+                while (1) {
+                    printf("%" PRIspeedint "\n", not_mersenne(primes()));
+                }
         }
-        sscanf(argv[1], "%" SCNspeedint, &a);
-        { speedint b = a; while (--b) primes(); }
-        size_t factorc;
-        factor *factorv = factorise(a, &factorc);
-        printf("Factors of %" PRIspeedint "\n", a);
-        for (size_t i = 0; i < factorc; i += 1) {
-            printf("  * %" PRIspeedint " ^ %" PRIspeedint "\n",
-                   factorv[i].prime, factorv[i].exponent);
-        }
-        return 0;
-    }
-
-    primes();  // initialise, ignore 2
-    while (1) {
-        printf("%" PRIspeedint "\n", not_mersenne(primes()));
     }
 }
