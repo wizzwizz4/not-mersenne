@@ -149,6 +149,7 @@ int main(int argc, char *argv[]) {
         {"factorise",    required_argument, NULL, 0},
         {"primes",       no_argument,       NULL, 0},
         {"not_mersenne", no_argument,       NULL, 0},
+        {"sieve",        required_argument, NULL, 0},
         {NULL, 0, NULL, 0}
     };
     int longindex;
@@ -178,6 +179,51 @@ int main(int argc, char *argv[]) {
                 while (1) {
                     printf("%" PRIspeedint "\n", not_mersenne(primes()));
                 }
+            case 3: if (optarg == NULL) break;
+            {
+                primes();  // initialise, ignore 2
+                speedint start, end, precision;
+                sscanf(optarg,
+                       "%" SCNspeedint "-%" SCNspeedint "@%" SCNspeedint,
+                       &start, &end, &precision);
+                start |= 1;  // round up
+                end |= 1;    // round up
+                // we can do the same ignoring 2 trick because 2 is the
+                // first value to be output, though we have to add a litle
+                // fudge factor to account for stuff
+                speedint sieve_size = (end - start) / 2 + (end % 2);
+                bool sieve[sieve_size];
+                for (size_t i = 0; i < sieve_size; i += 1) {
+                    sieve[i] = true;
+                }
+                while (--precision) {
+                    speedint not = not_mersenne(primes());
+                    if (not % 2 == 0) {
+                        continue;  // the following assumes that not is even,
+                                   // and they've already been filtered out
+                                   // anyway
+                    }
+                    // skip not * 1; 3 is still prime even though
+                    // it's divisible by itself!
+                    if (start % not && start != not) {
+                        sieve[0] = false;
+                    }
+                    speedint i = not * 2 - (start % not);
+                    if (i % 2 == 1) {
+                        i += not;
+                    }
+                    i /= 2;
+                    for (; i < sieve_size; i += not) {
+                        sieve[i] = false;
+                    }
+                }
+                for (size_t i = 0; i < sieve_size; i += 1) {
+                    if (sieve[i]) {
+                        printf("%" PRIspeedint "\n",
+                               start + ((speedint)i * 2));
+                    }
+                }
+            }
         }
     }
 }
