@@ -150,6 +150,7 @@ int main(int argc, char *argv[]) {
         {"primes",       no_argument,       NULL, 0},
         {"not_mersenne", no_argument,       NULL, 0},
         {"sieve",        required_argument, NULL, 0},
+        {"odd_mersenne", no_argument,       NULL, 0},
         {NULL, 0, NULL, 0}
     };
     int longindex;
@@ -231,6 +232,12 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+            case 4:
+                for (speedint i = 1; ; i += 2) {
+                    printf("%" PRIspeedint "\t%" PRIspeedint "\n",
+                           i, not_mersenne(i));
+                }
+                break;
         }
     }
 }
