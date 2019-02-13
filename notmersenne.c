@@ -197,7 +197,8 @@ int main(int argc, char *argv[]) {
                     sieve[i] = true;
                 }
                 while (--precision) {
-                    speedint not = not_mersenne(primes());
+                    speedint prime = primes();
+                    speedint not = not_mersenne(prime);
                     if (not % 2 == 0) {
                         continue;  // the following assumes that not is even,
                                    // and they've already been filtered out
@@ -205,8 +206,14 @@ int main(int argc, char *argv[]) {
                     }
                     // skip not * 1; 3 is still prime even though
                     // it's divisible by itself!
-                    if (start % not && start != not) {
+                    // however, if not > log_2(prime), that means that
+                    // (2**not - 1) is divisible by something smaller than
+                    // itself, i.e. is not prime.
+                    if (start % not && (start != not)) {
                         sieve[0] = false;
+                    }
+                    if (not > start && not > 64 - __builtin_clzll(prime)) {
+                        sieve[not - start] = false;
                     }
                     speedint i = not * 2 - (start % not);
                     if (i % 2 == 1) {
