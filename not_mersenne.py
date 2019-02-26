@@ -100,8 +100,10 @@ if __name__ == "__main__":
     next(p)  # skip 2
     print(end="(2^")
     try:
-        for a in certain(p):
-            print(a, end="n) - 1\n(2^")
+        for a in p:
+            n = not_mersenne(next(p))
+            if n in primes.__defaults__[0]:
+                print(n, end="n) - 1\n(2^")
     except KeyboardInterrupt:
         print(" …")
         raise
